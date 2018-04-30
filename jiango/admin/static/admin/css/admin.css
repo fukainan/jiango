@@ -1,0 +1,30 @@
+@CHARSET "UTF-8";
+
+.table th.nowrap,
+.table td.nowrap,
+.table th.user,
+.table td.user,
+.table th.number,
+.table td.number,
+.table th.datetime,
+.table td.datetime {
+	white-space:nowrap;
+	width:10px;
+}
+.table th.number,
+.table td.number {
+	text-align:right;
+}
+.table td.datetime,
+.table td.number {
+	font-family: 'Consolas', 'Monaco', 'Bitstream Vera Sans Mono', monospace;
+}
+
+/*
+ * utils
+ */
+i.sep {
+	font-style:normal;
+	color: #ddd;
+	margin: 0 5px;
+}

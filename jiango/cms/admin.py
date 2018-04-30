@@ -16,8 +16,15 @@ from .forms import ColumnForm, ColumnEditForm, ActionForm, RecycleClearForm, Col
 from .config import CONTENT_MODELS, CONTENT_ACTION_MAX_RESULTS, CONTENT_PER_PAGE
 
 
+icon = 'fa fa-file-text-o'
+verbose_name = '内容'
 render = renderer('cms/admin/')
 log = Logger('cms')
+
+
+@render
+def index(request, response):
+    return redirect('admin:cms:content')
 
 
 @render
@@ -39,7 +46,7 @@ def column_edit(request, response, column_id=None):
         form.instance.update_user = user
         obj = form.save()
         log.success(request, model_log.message(obj), log.CREATE)
-        messages.success(request, (instance and u'修改' or u'创建') + u'栏目: ' + unicode(obj) + u' 成功')
+        messages.success(request, (instance and '修改' or '创建') + '栏目: ' + str(obj) + ' 成功')
         return redirect('admin:cms:column')
     return locals()
 
@@ -51,16 +58,16 @@ def column_delete(request, response, column_id):
     # 删除确认表单
     form = ColumnDeleteForm(request.POST or None)
     if form.is_valid():
-        msg = u'删除栏目: ' + unicode(instance)
+        msg = '删除栏目: ' + str(instance)
         logs = [msg, ModelLogger(instance).message()]
         # 删除子栏目
         for i in instance.children(-1):
-            logs.append(u'子栏目: ' + unicode(i))
+            logs.append('子栏目: ' + str(i))
             logs.append(ModelLogger(i).message())
             i.delete()
         instance.delete()
         log.success(request, '\n'.join(logs), log.DELETE)
-        messages.success(request, msg + u' 完成')
+        messages.success(request, msg + ' 完成')
         return redirect('admin:cms:column')
     deleted_columns = [instance]
     deleted_columns.extend(list(instance.children(-1)))
@@ -103,9 +110,9 @@ def content_action(request, response):
     # 选定数据检查
     selected = action_form_post.getlist('pk')
     if not selected:
-        raise Alert(Alert.ERROR, u'您没有勾选需要操作的内容')
+        raise Alert(Alert.ERROR, '您没有勾选需要操作的内容')
     if len(selected) > CONTENT_ACTION_MAX_RESULTS:
-        raise Alert(Alert.ERROR, u'超过最大选择条数: %d' % CONTENT_ACTION_MAX_RESULTS)
+        raise Alert(Alert.ERROR, '超过最大选择条数: %d' % CONTENT_ACTION_MAX_RESULTS)
     
     # 为二次确认提交准备
     if not action_form_data:
@@ -121,9 +128,9 @@ def content_action(request, response):
         form = Form(content_set, request.POST, request.FILES)
         if form.is_valid():
             form.execute()
-            msg = u'批量执行: ' + action_name
-            log.success(request, u'%s\nID: %s\n表单数据: %s' % (msg, ','.join(selected), form.cleaned_data), form.log_action)
-            messages.success(request, u'已完成' + msg)
+            msg = '批量执行: ' + action_name
+            log.success(request, '%s\nID: %s\n表单数据: %s' % (msg, ','.join(selected), form.cleaned_data), form.log_action)
+            messages.success(request, '已完成' + msg)
             if back:
                 return HttpResponseRedirect(back)
             return redirect('admin:cms:content')
@@ -148,13 +155,13 @@ def recycle(request, response, model=None):
             action = request.POST.get('action')
             selected = request.POST.getlist('pk')
             if not selected:
-                raise Alert(Alert.ERROR, u'您没有勾选需要操作的内容')
+                raise Alert(Alert.ERROR, '您没有勾选需要操作的内容')
             if action == 'fire':
                 has_perm(request, 'cms.recycle.fire')
                 content_set.filter(pk__in=selected).delete()
-                msg = u'回收站批量删除: ' + selected_model.get('name')
-                log.success(request, u'%s\nID: %s' % (msg, ','.join(selected)), log.DELETE)
-                messages.success(request, u'已完成' + msg)
+                msg = '回收站批量删除: ' + selected_model.get('name')
+                log.success(request, '%s\nID: %s' % (msg, ','.join(selected)), log.DELETE)
+                messages.success(request, '已完成' + msg)
         
         content_set = Paging(content_set, request, CONTENT_PER_PAGE).page()
     else:
@@ -188,9 +195,9 @@ def recycle_clear(request, response, model):
     form = RecycleClearForm(content_count, request.POST or None)
     if form.is_valid():
         content_set.delete()
-        msg = u'清空回收站: ' + model_name
-        log.success(request, u'%s\n数量: %d' % (msg, content_count), log.DELETE)
-        messages.success(request, u'已完成' + msg)
+        msg = '清空回收站: ' + model_name
+        log.success(request, '%s\n数量: %d' % (msg, content_count), log.DELETE)
+        messages.success(request, '已完成' + msg)
         return redirect('admin:cms:recycle')
     
     return 'recycle', locals()
@@ -206,7 +213,7 @@ def content_edit(request, response, column_select, content_id=None):
     Model = column.get_model_object('model')
     Form = column.get_model_object('form')
     if Model is None or Form is None:
-        raise Alert(Alert.ERROR, u'此栏目 %s 不可添加内容' % column)
+        raise Alert(Alert.ERROR, '此栏目 %s 不可添加内容' % column)
     
     content = Model.objects.get(column=column, pk=content_id) if content_id else None
     model_log = ModelLogger(content)
@@ -225,7 +232,7 @@ def content_edit(request, response, column_select, content_id=None):
         has_perm(request, 'cms.action.delete')
         update_instance(content, is_deleted=True)
         log.success(request, model_log.message(content), log.DELETE)
-        messages.success(request, u'删除内容: %s 成功' % unicode(content))
+        messages.success(request, '删除内容: %s 成功' % str(content))
         return redirect('admin:cms:content-path', column.path)
     
     # 删除恢复
@@ -234,7 +241,7 @@ def content_edit(request, response, column_select, content_id=None):
         has_perm(request, 'cms.content.recover')
         update_instance(content, is_deleted=False)
         log.success(request, model_log.message(content), log.UPDATE)
-        messages.success(request, u'恢复删除内容: %s 成功' % unicode(content))
+        messages.success(request, '恢复删除内容: %s 成功' % str(content))
         return redirect('admin:cms:content-path', column.path)
     
     if request.method == 'POST':
@@ -249,7 +256,7 @@ def content_edit(request, response, column_select, content_id=None):
             obj = form.save()
             
             log.success(request, model_log.message(obj), log.CREATE)
-            messages.success(request, (content and u'修改' or u'创建') + u'内容: ' + unicode(obj) + u' 成功')
+            messages.success(request, (content and '修改' or '创建') + '内容: ' + str(obj) + ' 成功')
             if request.GET.get('next'):
                 return HttpResponseRedirect(request.GET.get('next'))
             return redirect('admin:cms:content-path', column.path)
@@ -273,35 +280,39 @@ def content_edit(request, response, column_select, content_id=None):
     return 'content', locals()
 
 
-verbose_name = u'内容管理'
-
 urlpatterns = [
-    url(r'^$', content, name='index'),
-    url(r'^column/$', column, name='column'),
-    url(r'^column/create/$', column_edit, name='column-create'),
-    url(r'^column/(?P<column_id>\d+)/$', column_edit, name='column-edit'),
-    url(r'^column/(?P<column_id>\d+)/delete/$', column_delete, name='column-delete'),
+    url(r'^$', index, name='index'),
+    url(r'^/column$', column, name='column'),
+    url(r'^/column/create$', column_edit, name='column-create'),
+    url(r'^/column/(?P<column_id>\d+)$', column_edit, name='column-edit'),
+    url(r'^/column/(?P<column_id>\d+)/delete$', column_delete, name='column-delete'),
     
-    url(r'^content/$', content, name='content'),
-    url(r'^content/path/(?P<path>.*)/$', content, name='content-path'),
-    url(r'^content/create/(?P<path>.*)/$', content_edit, name='content-create'),
-    url(r'^content/edit/(?P<path>.*)/(?P<content_id>\d+)/$', content_edit, name='content-edit'),
-    url(r'^content/action/$', content_action, name='content-action'),
+    url(r'^/content$', content, name='content'),
+    url(r'^/content/path/(?P<path>.*)$', content, name='content-path'),
+    url(r'^/content/create/(?P<path>.*)$', content_edit, name='content-create'),
+    url(r'^/content/edit/(?P<path>.*)/(?P<content_id>\d+)$', content_edit, name='content-edit'),
+    url(r'^/content/action$', content_action, name='content-action'),
     
-    url(r'^recycle/$', recycle, name='recycle'),
-    url(r'^recycle/(?P<model>\w+)/$', recycle, name='recycle-model'),
-    url(r'^recycle/(?P<model>\w+)/clear/$', recycle_clear, name='recycle-model-clear'),
+    url(r'^/recycle$', recycle, name='recycle'),
+    url(r'^/recycle/(?P<model>\w+)$', recycle, name='recycle-model'),
+    url(r'^/recycle/(?P<model>\w+)/clear$', recycle_clear, name='recycle-model-clear'),
+]
+
+sub_menus = [
+    ('admin:cms:content', '内容管理', 'fa fa-edit'),
+    ('admin:cms:column', '栏目管理', 'fa fa-list'),
+    ('admin:cms:recycle', '回收站', 'fa fa-recycle'),
 ]
 
 PERMISSIONS = {
-    'column.edit': u'栏目|创建/编辑',
-    'column.delete': u'栏目|删除',
-    'recycle.fire': u'回收站|批量删除',
-    'recycle.clear': u'回收站|清空',
-    'content.create': u'内容|创建',
-    'content.update.self': u'内容|修改本人内容',
-    'content.update.other': u'内容|修改他人内容',
-    'content.recover': u'内容|删除恢复',
+    'column.edit': '栏目|创建/编辑',
+    'column.delete': '栏目|删除',
+    'recycle.fire': '回收站|批量删除',
+    'recycle.clear': '回收站|清空',
+    'content.create': '内容|创建',
+    'content.update.self': '内容|修改本人内容',
+    'content.update.other': '内容|修改他人内容',
+    'content.recover': '内容|删除恢复',
 }
 
 
@@ -309,5 +320,5 @@ PERMISSIONS = {
 def _load_actions():
     for a, i in get_all_actions().items():
         perm = 'action.%s' % a
-        PERMISSIONS[perm] = u'内容|%s' % i['name']
+        PERMISSIONS[perm] = '内容|%s' % i['name']
 _load_actions()

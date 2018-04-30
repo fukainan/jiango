@@ -6,7 +6,7 @@ from django.db.models.deletion import SET_NULL
 from django.dispatch import receiver
 from django.db.models import signals
 from django.db.models.query import QuerySet
-from django.utils.datastructures import SortedDict
+from collections import OrderedDict
 from django.utils.functional import cached_property
 from jiango.shortcuts import update_instance
 from jiango.admin.models import User
@@ -40,14 +40,14 @@ class ColumnQuerySet(QuerySet):
     # 返回树形字典
     def tree(self, path=''):
         qs = self.filter(path__istartswith=path + '/') if path else self.all()
-        out = SortedDict()
+        out = OrderedDict()
         for i in qs:
             ref = out
             col = []
             paths = i.path.split('/')
             for p in paths:
-                if not ref.has_key(p):
-                    ref[p] = [None, SortedDict()]
+                if p not in ref:
+                    ref[p] = [None, OrderedDict()]
                 col = ref[p]
                 ref = ref[p][1]
             col[0] = i
@@ -89,7 +89,7 @@ class Column(models.Model):
     class Meta:
         ordering = ('sort',)
     
-    def __unicode__(self):
+    def __str__(self):
         return self.path
     
     @models.permalink

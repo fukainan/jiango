@@ -7,6 +7,6 @@ from jiango.utils.humanize import humanize_second
 
 class SecondInput(TextInput):
     def _format_value(self, value):
-        if isinstance(value, (int, long)):
+        if isinstance(value, int):
             return humanize_second(value)
         return value

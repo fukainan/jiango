@@ -4,7 +4,6 @@
 from django import template
 from jiango.utils.humanize import humanize_second, humanize_size
 
-
 register = template.Library()
 register.filter('humanizesecond', humanize_second, is_safe=True)
 
@@ -16,7 +15,7 @@ def naturalsecond(seconds):
     minutes, seconds = divmod(seconds, 60)
     return ''.join(((u'%d天' % days if days else ''),
                     (u'%d小时' % hours if hours else ''),
-                    (u'%d分' % minutes if minutes else ''),
+                    (u'%d分钟' % minutes if minutes else ''),
                     (u'%d秒' % seconds if seconds else ''),
                     ))
 
@@ -26,7 +25,7 @@ def filesize(value):
     size, unit = humanize_size(int(value))
     if unit is None:
         return size
-    return '%.2f %sB' %(size, unit)
+    return '%.2f %sB' % (size, unit)
 
 
 @register.filter(is_safe=True)

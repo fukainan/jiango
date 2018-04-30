@@ -13,11 +13,11 @@ urlpatterns = patterns('',
 )
 """
 
-from django.conf.urls import url
+from django.urls import path
 from . import views
 
 urlpatterns = [
-    url(r'^(?P<path>.*)/page.(?P<page>\d+)/$', views.content_list, name='cms-list'),
-    url(r'^(?P<path>.*)/(?P<content_id>\d+)/$', views.content_show, name='cms-content'),
-    url(r'^(?P<path>.*)/$', views.column, name='cms-column'),
+    path('<path:path>/page.<int:page>/', views.content_list, name='cms-list'),
+    path('<path:path>/<int:content_id>/', views.content_show, name='cms-content'),
+    path('<path:path>/', views.column, name='cms-column'),
 ]

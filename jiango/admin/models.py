@@ -7,24 +7,25 @@ from django.dispatch import receiver
 from django.db.models.signals import pre_delete
 from django.utils import timezone
 from django.utils.functional import cached_property
-from django.core.urlresolvers import reverse, NoReverseMatch
+from django.urls import reverse, NoReverseMatch
 from jiango.serializers import serialize, deserialize
 from jiango.shortcuts import update_instance
 from .config import ONLINE_TIMEOUT, SECRET_KEY_DIGEST, LOGIN_FAIL_LOCK_TIMES, LOGIN_MAX_FAILS
 
 
 def get_password_digest(raw_password):
-    return hashlib.md5(hashlib.md5(raw_password).hexdigest() + SECRET_KEY_DIGEST).hexdigest()
+    return hashlib.md5(
+        ''.join((hashlib.md5(raw_password.encode('utf8')).hexdigest(), SECRET_KEY_DIGEST)).encode('utf8')).hexdigest()
 
 
 class Permission(models.Model):
     codename = models.CharField(max_length=100, primary_key=True)
     name = models.CharField(u'权限名', max_length=100)
-    
+
     class Meta:
         ordering = ('codename',)
-    
-    def __unicode__(self):
+
+    def __str__(self):
         return ' | '.join(self.name.split('|'))
 
 
@@ -32,8 +33,8 @@ class Group(models.Model):
     name = models.CharField(u'名称', max_length=80, unique=True)
     permissions = models.ManyToManyField(Permission, verbose_name=u'权限', blank=True)
     permissions.help_text = None  # 强制去除默认的 选择多个值 提示
-    
-    def __unicode__(self):
+
+    def __str__(self):
         return self.name
 
 
@@ -59,27 +60,27 @@ class User(models.Model):
     permissions = models.ManyToManyField(Permission, verbose_name=u'额外权限', blank=True)
     permissions.help_text = u'如果为超级用户则已经拥有所有权限无需选择'
     objects = UserManager()
-    
+
     class Meta:
         ordering = ('-request_at',)
         verbose_name = u'管理员'
-    
-    def __unicode__(self):
+
+    def __str__(self):
         return '%s #%d' % (self.username, self.pk)
-    
+
     def update_password(self, password_digest):
         update_instance(self, password_digest=password_digest)
-    
+
     @property
     def login_fail_lock_remain(self):
         if not self.login_fail_at:
             return 0
         return max(0, LOGIN_FAIL_LOCK_TIMES - (timezone.now() - self.login_fail_at).seconds)
-    
+
     @property
     def is_login_fail_lock(self):
         return self.login_fail_lock_remain > 0 and self.login_fails >= LOGIN_MAX_FAILS
-    
+
     def update_login_fails(self, fails=1):
         updates = {'login_fails': self.login_fails}
         if self.login_fail_at is None or self.login_fail_lock_remain == 0:
@@ -87,18 +88,18 @@ class User(models.Model):
             updates['login_fails'] = 0
         updates['login_fails'] += fails
         update_instance(self, **updates)
-    
+
     @cached_property
     def get_group_permissions(self):
         perms = Permission.objects.filter(group__user=self).values_list('codename')
         return set([i[0] for i in perms])
-    
+
     @cached_property
     def get_all_permissions(self):
         perms = set([i[0] for i in self.permissions.values_list('codename')])
         perms.update(self.get_group_permissions)
         return perms
-    
+
     @property
     def perm_stat(self):
         if not self.is_active:
@@ -106,28 +107,28 @@ class User(models.Model):
         if self.is_superuser:
             return u'全部'
         return len(self.get_all_permissions)
-    
+
     def has_perm(self, codename):
         if not self.is_active:
             return False
         if self.is_superuser:
             return True
         return codename in self.get_all_permissions
-    
+
     @property
     def is_login(self):
         return self.login_token is not None
-    
+
     @property
     def online_remain(self):
         if not self.request_at:
             return 0
         return max(0, ONLINE_TIMEOUT - (timezone.now() - self.request_at).seconds)
-    
+
     @property
     def is_online(self):
         return self.is_login and self.online_remain > 0
-    
+
     def update_request_at(self, request_at=None):
         update_instance(self, request_at=(request_at or timezone.now()))
 
@@ -144,7 +145,7 @@ class LogTypes(object):
     SUCCESS = 25
     WARNING = 30
     ERROR = 40
-    
+
     LEVELS = (
         (DEBUG, u'调试'),
         (INFO, u'信息'),
@@ -152,7 +153,7 @@ class LogTypes(object):
         (WARNING, u'注意'),
         (ERROR, u'错误'),
     )
-    
+
     NONE = 0
     CREATE = 10
     RETRIEVE = 20
@@ -160,7 +161,7 @@ class LogTypes(object):
     DELETE = 40
     LOGIN = 1000
     LOGOUT = 1001
-    
+
     ACTIONS = (
         (NONE, u'无'),
         (CREATE, u'增加'),
@@ -183,11 +184,11 @@ class Log(models.Model):
     view_name = models.CharField(max_length=100, null=True)
     view_args = models.CharField(max_length=100, null=True)
     view_kwargs = models.CharField(max_length=100, null=True)
-    remote_ip = models.IPAddressField(null=True)
-    
+    remote_ip = models.GenericIPAddressField(null=True)
+
     class Meta:
         ordering = ('-id',)
-    
+
     @classmethod
     def write(cls, level=LogTypes.SUCCESS, app_label=None, content=None, action=LogTypes.NONE,
               view_name=None, view_args=None, view_kwargs=None,
@@ -201,8 +202,8 @@ class Log(models.Model):
         return cls.objects.create(level=level, action=action, app_label=app_label,
                                   content=content, view_name=view_name,
                                   view_args=_view_args, view_kwargs=_view_kwargs,
-                                  remote_ip=remote_ip, user=user, username=(unicode(user) if user else None))
-    
+                                  remote_ip=remote_ip, user=user, username=(str(user) if user else None))
+
     @cached_property
     def view_url(self):
         if self.view_name:
@@ -212,7 +213,7 @@ class Log(models.Model):
                 return reverse(self.view_name, args=args, kwargs=kwargs)
             except NoReverseMatch:
                 pass
-    
+
     def app_verbose_name(self):
         from .loader import get_app_verbose_name
         return get_app_verbose_name(self.app_label)

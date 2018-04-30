@@ -28,7 +28,7 @@ class Param(object):
         raise ParamError('Key %r does not exist.' % key)
     
     def has_key(self, key):
-        return self.data.has_key(key)
+        return key in self.data
     
     def int(self, key, default=None, max_value=None, min_value=None):
         if self.has_key(key):

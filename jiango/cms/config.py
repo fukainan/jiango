@@ -3,7 +3,7 @@
 # @author: Yefei
 import re
 from django.conf import settings
-from django.utils.datastructures import SortedDict
+from collections import OrderedDict
 
 
 COLUMN_PATH_RE = re.compile(u'^[_\-\w\u4e00-\uE814]+$')
@@ -39,7 +39,7 @@ CONTENT_PER_PAGE = 100
 CONTENT_ACTION_MAX_RESULTS = 100
 
 # 通用动作
-CONTENT_ACTIONS = SortedDict()
+CONTENT_ACTIONS = OrderedDict()
 CONTENT_ACTIONS['hide'] = {
     'name': u'隐藏/显示',
     'icon': 'icon-eye-close',

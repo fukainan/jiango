@@ -1,6 +1,6 @@
-from cStringIO import StringIO
+from io import StringIO
 from django.http import HttpResponse, Http404
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from jiango.shortcuts import render_serialize
 from .helpers import decrypt_challenge, create_crypted_challenge
 from .draws import draw

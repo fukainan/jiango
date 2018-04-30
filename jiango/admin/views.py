@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Created on 2015-9-2
 # @author: Yefei
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import HttpResponseRedirect
 from django.utils.crypto import get_random_string
 from django.shortcuts import redirect
@@ -10,7 +10,7 @@ from jiango.pagination import Paging
 from .shortcuts import renderer, Alert, has_superuser, has_perm, Logger
 from .forms import AuthenticationForm, SetPasswordForm, UserForm, GroupForm
 from .auth import LOGIN_NEXT_FIELD, set_login, set_login_cookie, set_logout, set_logout_cookie, get_request_user
-from .config import SECRET_KEY_DIGEST
+from .config import SECRET_KEY_DIGEST, FULL_NAME, CLIENT_PASSWORD_ENCRYPT
 from .models import User, Log, get_password_digest, Group
 
 
@@ -27,17 +27,19 @@ def index(request, response):
     return locals()
 
 
-@render(logout=True)
+@render(logout=True, extends_layout=False)
 def login(request, response):
+    site_full_name = FULL_NAME
+    client_password_encrypt = CLIENT_PASSWORD_ENCRYPT
     secret_key = SECRET_KEY_DIGEST
     if request.method == 'POST':
-        form = AuthenticationForm(request.POST)
+        form = AuthenticationForm(client_password_encrypt, request.POST)
         if form.is_valid():
             user = form.get_user()
             if not user.is_active:
                 log(request, log.WARNING, u'用户 %s 认证成功，由于账户已被停用而被禁止登陆' % user.username, log.LOGIN, user=user)
                 raise Alert(Alert.ERROR, u'您的帐号已经被停用')
-            next_url = request.REQUEST.get(LOGIN_NEXT_FIELD, reverse('admin:-index'))
+            next_url = request.POST.get(LOGIN_NEXT_FIELD, reverse('admin:-index'))
             resp = HttpResponseRedirect(next_url)
             set_login(user)
             set_login_cookie(resp, user)
@@ -46,12 +48,12 @@ def login(request, response):
         log(request, log.WARNING, u'尝试登陆\n用户名: %s' % form.data.get('username',''),
             log.LOGIN, user=form.get_user(), form=form)
     else:
-        form = AuthenticationForm()
+        form = AuthenticationForm(client_password_encrypt)
     return locals()
 
 
 # login=False 防止用户已经退出后再刷新此页，然后跳转到登陆页面，登陆完了又退出
-@render(login=False)
+@render(login=False, extends_layout=False)
 def logout(request, response):
     user = get_request_user(request)
     if user:
@@ -62,6 +64,7 @@ def logout(request, response):
 
 @render
 def set_password(request, response, user_id=None):
+    client_password_encrypt = CLIENT_PASSWORD_ENCRYPT
     secret_key = SECRET_KEY_DIGEST
     user = get_request_user(request)
     target_user = User.objects.get(pk=user_id) if user_id else user
@@ -71,9 +74,9 @@ def set_password(request, response, user_id=None):
         has_superuser(request)
     
     if request.method == 'POST':
-        form = SetPasswordForm(user, request.POST)
+        form = SetPasswordForm(user, client_password_encrypt, request.POST)
         if form.is_valid():
-            target_user.update_password(form.cleaned_data['new'])
+            target_user.update_password(form.get_new_password())
             log(request, log.SUCCESS, u'修改 %s 的登陆密码' % target_user, log.UPDATE)
             messages.success(request, u'成功修改 %s 的登陆密码' % target_user)
             resp = redirect('admin:-index')
@@ -91,7 +94,7 @@ def set_password(request, response, user_id=None):
             raise Alert(Alert.ERROR, u'修改登陆密码时验证当前密码错误被强制退出',
                         {u'重新登陆': reverse('admin:-login')}, back=False)
     else:
-        form = SetPasswordForm(user)
+        form = SetPasswordForm(user, client_password_encrypt)
     return locals()
 
 

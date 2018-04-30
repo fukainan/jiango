@@ -2,7 +2,7 @@
 # Created on 2015-9-5
 # @author: Yefei
 from django.core.paginator import Paginator, Page
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 
 class SafePaginator(Paginator):

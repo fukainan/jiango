@@ -13,7 +13,7 @@ def get_draw(draw_alias):
     try:
         mod = importlib.import_module(mod_path)
         draw_cls = getattr(mod, 'CaptchaDraw')
-    except (AttributeError, ImportError), e:
+    except (AttributeError, ImportError) as e:
         raise InvalidCaptchaDrawError("Could not find backend '%s': %s" % (mod_path, e))
     return draw_cls(CAPTCHA_DRAWS[draw_alias]['OPTIONS'])
 

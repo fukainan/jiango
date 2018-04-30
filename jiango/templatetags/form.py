@@ -12,5 +12,5 @@ def form_field(context, field, error_class=None, **attrs):
         {% ff form.mobile "errorClassName" type="tel" placeholder="请输入手机号" %}
     """
     if error_class and field.errors:
-        attrs['class'] = (attrs.get('class','') + ' ' + error_class).strip()
+        attrs['class'] = (attrs.get('class', '') + ' ' + error_class).strip()
     return field.as_widget(attrs=attrs)

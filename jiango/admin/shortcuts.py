@@ -8,6 +8,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from jiango.shortcuts import render_to_string, HttpReload
 from .auth import login_redirect, logout_redirect, get_request_user
 from .models import Permission, Log, LogTypes
+from . import config
 
 
 class Alert(Exception):
@@ -94,8 +95,19 @@ def renderer(prefix=None, default_extends_layout=True,
                 
                 from .loader import get_navigation
                 user = get_request_user(request)
+                navigation = None
+                current_sub_menus = None
+                if user:
+                    navigation = get_navigation(request)
+                    for i in navigation:
+                        if i['is_active']:
+                            current_sub_menus = i['sub_menus']
+                            break
                 base_dictionary = {'content': content,
-                                   'navigation': user and get_navigation(request),
+                                   'config': config,
+                                   'navigation': navigation,
+                                   'current_sub_menus': current_sub_menus,
+                                   'sidebar_collapse': request.COOKIES.get('admin-sidebar-collapse') == '1',
                                    'user': user}
                 response.content = render_to_string(request, base_dictionary, 'admin/layout')
                 return response
@@ -159,14 +171,14 @@ class ModelLogger(object):
 
     @staticmethod
     def get_instance_values(instance):
-        return [(f.attname, unicode(getattr(instance, f.attname))) for f in instance._meta.local_fields]
+        return [(f.attname, str(getattr(instance, f.attname))) for f in instance._meta.local_fields]
     
     def diff_values(self, new_instance):
         if not self.instance_values:
             return False
         diff_values = []
         for attname, orig_value in self.instance_values:
-            new_value = unicode(getattr(new_instance, attname))
+            new_value = str(getattr(new_instance, attname))
             if new_value != orig_value:
                 diff_values.append((attname, orig_value, new_value))
         return diff_values

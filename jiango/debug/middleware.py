@@ -3,9 +3,10 @@
 # @author: Yefei
 import sys
 from django.db import connection
+from django.utils.deprecation import MiddlewareMixin
 
 
-class SQLDebugMiddleware(object):
+class SQLDebugMiddleware(MiddlewareMixin):
     def process_response(self, request, response):
         if connection.queries:
             sys.stdout.write("SQL %s\n" % ('=' * 26))

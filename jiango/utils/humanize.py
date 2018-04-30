@@ -4,7 +4,7 @@
 
 # 1d=1天,1h=1小时,1m=1分钟,1s=1秒s可以不加。例如10天20小时15分3秒: 10d20h15m3
 def parse_humanize_second(value):
-    if isinstance(value, basestring):
+    if isinstance(value, str):
         if value.isdigit():
             return int(value)
         tmp = ''
@@ -42,7 +42,8 @@ def humanize_second(seconds):
                     ))
 
 
-SIZE_UNITS = [None,'K','M','G','T','P','E','Z','Y']
+SIZE_UNITS = [None, 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']
+
 
 def humanize_size(size, step=1024, units=SIZE_UNITS):
     if size < step:

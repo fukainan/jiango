@@ -17,7 +17,7 @@ To add your own serializers, use the JIANGO_SERIALIZATION_MODULES setting::
 """
 
 from django.conf import settings
-from django.utils.importlib import import_module
+from importlib import import_module
 
 # Built-in serializers
 BUILTIN_SERIALIZERS = {

@@ -4,20 +4,20 @@
 from django.db import models, router
 from django.db.models.deletion import Collector
 from django.utils.text import capfirst
-from django.utils.encoding import force_unicode
+from django.utils.encoding import force_str
 
 
 def get_deleted_objects(queryset, using=None):
     if using is None:
         using = router.db_for_write(queryset.model)
-        print using
+        print(using)
     
     collector = NestedObjects(using=using)
     collector.collect(queryset)
     
     def format_callback(obj):
         opts = obj._meta
-        return u'%s: %s' % (capfirst(opts.verbose_name), force_unicode(obj))
+        return u'%s: %s' % (capfirst(opts.verbose_name), force_str(obj))
 
     to_delete = collector.nested(format_callback)
     protected = [format_callback(obj) for obj in collector.protected]
@@ -41,7 +41,7 @@ class NestedObjects(Collector):
                 self.add_edge(None, obj)
         try:
             return super(NestedObjects, self).collect(objs, source_attr=source_attr, **kwargs)
-        except models.ProtectedError, e:
+        except models.ProtectedError as e:
             self.protected.update(e.protected_objects)
 
     def related_objects(self, related, objs):
